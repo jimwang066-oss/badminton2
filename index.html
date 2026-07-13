@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>羽毛球賽程系統</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        h1 { margin: 0; font-size: 24px; color: #222; }
+        .top-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .nav-btn {
+            background-color: #e0e0e0;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .nav-btn:hover { background-color: #d0d0d0; }
+        .nav-btn.active { background-color: #007bff; color: white; border-color: #0069d9; }
+        .toggle-btn {
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .toggle-btn.on { background-color: #28a745; color: white; border-color: #218838; }
+        
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* 排程頁面樣式 */
+        .courts-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        @media (max-width: 900px) {
+            .courts-container { grid-template-columns: repeat(2, 1fr); }
+        }
+        .court-box {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+        }
+        .court-box.hidden { display: none !important; }
+        .court-header-zone {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .court-title { font-weight: bold; color: #0c5460; font-size: 16px; }
+        .court-timer {
+            font-size: 12px;
+            background-color: #17a2b8;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-family: monospace;
+            display: none;
+        }
+        .player-grid-4 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .slot {
+            background-color: #fff;
+            border: 1px solid #ccd1d9;
+            border-radius: 4px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0 4px;
+        }
+        .slot:hover { border-color: #007bff; background-color: #f0f7ff; }
+        .slot.selected {
+            background-color: #ffeeba !important;
+            border-color: #ffc107 !important;
+            box-shadow: 0 0 5px rgba(255,193,7,0.5);
+        }
+        .slot.occupied { font-weight: 500; }
+        
+        .btn-next-match {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-next-match:hover { background-color: #218838; }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            border-left: 4px solid #007bff;
+            padding-left: 8px;
+        }
+        
+        /* 排隊區 */
+        .queue-grid {
+            display: grid;
+            grid-template-rows: repeat(4, 1fr);
+            grid-auto-flow: column;
+            gap: 10px;
+            max-width: 600px;
+            background-color: #fff3cd;
+            padding: 15px;
+            border: 1px solid #ffeeba;
+            border-radius: 6px;
+        }
+        
+        /* 休息區 */
+        .rest-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            background-color: #e2e3e5;
+            padding: 15px;
+            border: 1px solid #d6d8db;
+            border-radius: 6px;
+        }
+
+        /* 名單設定頁面樣式 */
+        .settings-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+        }
+        .io-zone {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px dashed #ccc;
+            border-radius: 4px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .io-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .io-btn:hover { background-color: #5a6268; }
+        .file-input { display: none; }
+        
+        .group-section {
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            background-color: #fff;
+        }
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .input-group input {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex: 1;
+            max-width: 200px;
+        }
+        .btn-add {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-add:hover { background-color: #0069d9; }
+        
+        .checkbox-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .player-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            background: #fdfdfd;
+            padding: 6px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            user-select: none;
+        }
+        .player-label:hover { background: #f0f4f8; }
+
+        .control-panel {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 2px solid #eee;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .court-select-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .court-select-group select {
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .action-btn {
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-new-game { background-color: #007bff; color: white; }
+        .btn-new-game:hover { background-color: #0069d9; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #c82333; }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5a6268; }
+
+        .hint {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+            background-color: #e8f4fd;
+            padding: 10px;
+            border-left: 4px solid #17a2b8;
+        }
+        .match-count {
+            font-size: 11px;
+            background-color: #6c757d;
+            color: white;
+            border-radius: 10px;
+            padding: 1px 5px;
+            margin-left: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>羽毛球賽程系統 <small style="font-size:12px; color:#888;">v1.8.0</small></h1>
+        <div class="top-controls">
+            <button class="toggle-btn" id="btn-calc-match" onclick="toggleCalcMatch()">計算場次 (關)</button>
+            <button class="toggle-btn" id="btn-fair-alert" onclick="toggleFairAlert()">公平提醒 (關)</button>
+            <button class="nav-btn" onclick="undo()">⬅️ 上一步</button>
+            <button class="nav-btn" onclick="redo()">➡️ 下一步</button>
+            <button class="nav-btn active" id="btn-page-schedule" onclick="switchPage('schedule')">排程頁面</button>
+            <button class="nav-btn" id="btn-page-settings" onclick="switchPage('settings')">名單設定</button>
+        </div>
+    </div>
+
+    <!-- 排程頁面 -->
+    <div id="page-schedule" class="page active">
+        <div class="courts-container">
+            <!-- 場地 A -->
+            <div class="court-box" id="court-box-A">
+                <div class="court-header-zone">
+                    <div class="court-title">場地 A</div>
+                    <div class="court-timer" id="timer-A">00:00</div>
+                </div>
+                <div class="player-grid-4">
+                    <div class="slot" data-zone="court" data-court="A" data-idx="0">—</div>
+                    <div class="slot" data-zone="court" data-court="A" data-idx="1">—</div>
+                    <div class="slot" data-zone="court" data-court="A" data-idx="2">—</div>
+                    <div class="slot" data-zone="court" data-court="A" data-idx="3">—</div>
+                </div>
+                <button class="btn-next-match" onclick="rotateCourt('A')">下場</button>
+            </div>
+            <!-- 場地 B -->
+            <div class="court-box" id="court-box-B">
+                <div class="court-header-zone">
+                    <div class="court-title">場地 B</div>
+                    <div class="court-timer" id="timer-B">00:00</div>
+                </div>
+                <div class="player-grid-4">
+                    <div class="slot" data-zone="court" data-court="B" data-idx="0">—</div>
+                    <div class="slot" data-zone="court" data-court="B" data-idx="1">—</div>
+                    <div class="slot" data-zone="court" data-court="B" data-idx="2">—</div>
+                    <div class="slot" data-zone="court" data-court="B" data-idx="3">—</div>
+                </div>
+                <button class="btn-next-match" onclick="rotateCourt('B')">下場</button>
+            </div>
+            <!-- 場地 C -->
+            <div class="court-box" id="court-box-C">
+                <div class="court-header-zone">
+                    <div class="court-title">場地 C</div>
+                    <div class="court-timer" id="timer-C">00:00</div>
+                </div>
+                <div class="player-grid-4">
+                    <div class="slot" data-zone="court" data-court="C" data-idx="0">—</div>
+                    <div class="slot" data-zone="court" data-court="C" data-idx="1">—</div>
+                    <div class="slot" data-zone="court" data-court="C" data-idx="2">—</div>
+                    <div class="slot" data-zone="court" data-court="C" data-idx="3">—</div>
+                </div>
+                <button class="btn-next-match" onclick="rotateCourt('C')">下場</button>
+            </div>
+            <!-- 場地 D -->
+            <div class="court-box" id="court-box-D">
+                <div class="court-header-zone">
+                    <div class="court-title">場地 D</div>
+                    <div class="court-timer" id="timer-D">00:00</div>
+                </div>
+                <div class="player-grid-4">
+                    <div class="slot" data-zone="court" data-court="D" data-idx="0">—</div>
+                    <div class="slot" data-zone="court" data-court="D" data-idx="1">—</div>
+                    <div class="slot" data-zone="court" data-court="D" data-idx="2">—</div>
+                    <div class="slot" data-zone="court" data-court="D" data-idx="3">—</div>
+                </div>
+                <button class="btn-next-match" onclick="rotateCourt('D')">下場</button>
+            </div>
+        </div>
+
+        <div class="hint">💡 <b>操作提示：</b>點選任一格子後，再點選另一個格子，即可進行<b>人員移動</b>或<b>互換位置</b>。若啟用公平提醒，場地人員變更時該場地會自動重新計時。</div>
+
+        <div class="section-title">排隊區 (20格，每4人一組為一直行)</div>
+        <div class="queue-grid" id="queue-container"></div>
+
+        <div class="section-title">休息區 (共12格)</div>
+        <div class="rest-grid" id="rest-container"></div>
+    </div>
+
+    <!-- 名單設定頁面 -->
+    <div id="page-settings" class="page">
+        <div class="settings-container">
+            <!-- 匯入匯出區 -->
+            <div class="io-zone">
+                <strong>名單備份：</strong>
+                <button class="io-btn" onclick="exportData()">匯出名單 (JSON)</button>
+                <button class="io-btn" onclick="document.getElementById('import-file').click()">匯入名單 (JSON)</button>
+                <input type="file" id="import-file" class="file-input" accept=".json" onchange="importData(event)">
+            </div>
+
+            <!-- 三個時段群組 -->
+            <div class="group-section">
+                <div class="group-header">
+                    <input type="checkbox" id="all-A" onchange="toggleSelectGroup('A', this.checked)">
+                    <label for="all-A">A時段 全選</label>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="input-A" placeholder="新增名字..." onkeypress="if(event.key==='Enter')addPlayer('A')">
+                    <button class="btn-add" onclick="addPlayer('A')">新增</button>
+                </div>
+                <div class="checkbox-container" id="container-A"></div>
+            </div>
+
+            <div class="group-section">
+                <div class="group-header">
+                    <input type="checkbox" id="all-B" onchange="toggleSelectGroup('B', this.checked)">
+                    <label for="all-B">B時段 全選</label>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="input-B" placeholder="新增名字..." onkeypress="if(event.key==='Enter')addPlayer('B')">
+                    <button class="btn-add" onclick="addPlayer('B')">新增</button>
+                </div>
+                <div class="checkbox-container" id="container-B"></div>
+            </div>
+
+            <div class="group-section">
+                <div class="group-header">
+                    <input type="checkbox" id="all-O" onchange="toggleSelectGroup('O', this.checked)">
+                    <label for="all-O">零打 全選</label>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="input-O" placeholder="新增名字..." onkeypress="if(event.key==='Enter')addPlayer('O')">
+                    <button class="btn-add" onclick="addPlayer('O')">新增</button>
+                </div>
+                <div class="checkbox-container" id="container-O"></div>
+            </div>
+
+            <!-- 功能控制按鈕 -->
+            <div class="control-panel">
+                <div class="court-select-group">
+                    <label for="court-count-select">🏸 比賽場地數：</label>
+                    <select id="court-count-select" onchange="updateCourtCount(this.value)">
+                        <option value="2">2 面場地 (A, B)</option>
+                        <option value="3">3 面場地 (A, B, C)</option>
+                        <option value="4" selected>4 面場地 (A, B, C, D)</option>
+                    </select>
+                </div>
+                <button class="action-btn btn-new-game" onclick="startNewGame()">🌟 新比賽</button>
+                <button class="action-btn btn-danger" onclick="deleteSelectedPlayers()">🗑 刪除人員</button>
+                <button class="action-btn btn-secondary" onclick="uncheckAll()">🚫 取消所有勾選</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            players: [], 
+            courts: {
+                A: ["—", "—", "—", "—"], B: ["—", "—", "—", "—"],
+                C: ["—", "—", "—", "—"], D: ["—", "—", "—", "—"]
+            },
+            queue: Array(20).fill("—"),
+            rest: Array(12).fill("—"),
+            matchCounts: {}, 
+            calcMatchOn: false,
+            fairAlertOn: false,
+            courtCount: 4,
+            courtSeconds: { A: 0, B: 0, C: 0, D: 0 }
+        };
+
+        let historyStack = [];
+        let redoStack = [];
+        let selectedSlot = null;
+        let globalTimerInterval = null;
+
+        window.onload = function() {
+            const localData = localStorage.getItem('badminton_system_v17');
+            if (localData) {
+                try {
+                    state = JSON.parse(localData);
+                } catch(e) {
+                    console.error("讀取歷史快取失敗", e);
+                }
+            }
+            if(!state.matchCounts) state.matchCounts = {};
+            if(!state.courtCount) state.courtCount = 4;
+            if(!state.courtSeconds) state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
+            
+            document.getElementById('court-count-select').value = state.courtCount;
+            
+            renderAll();
+            initTimerState();
+        };
+
+        function saveState(pushToHistory = true) {
+            if (pushToHistory) {
+                historyStack.push(JSON.stringify(state));
+                redoStack = []; 
+            }
+            localStorage.setItem('badminton_system_v17', JSON.stringify(state));
+        }
+
+        function undo() {
+            if (historyStack.length === 0) return;
+            redoStack.push(JSON.stringify(state));
+            state = JSON.parse(historyStack.pop());
+            localStorage.setItem('badminton_system_v17', JSON.stringify(state));
+            document.getElementById('court-count-select').value = state.courtCount;
+            renderAll();
+            updateTimerUI();
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            historyStack.push(JSON.stringify(state));
+            state = JSON.parse(redoStack.pop());
+            localStorage.setItem('badminton_system_v17', JSON.stringify(state));
+            document.getElementById('court-count-select').value = state.courtCount;
+            renderAll();
+            updateTimerUI();
+        }
+
+        function updateCourtCount(val) {
+            saveState();
+            state.courtCount = parseInt(val);
+            saveState(false);
+            renderAll();
+        }
+
+        function toggleCalcMatch() {
+            state.calcMatchOn = !state.calcMatchOn;
+            const btn = document.getElementById('btn-calc-match');
+            btn.textContent = `計算場次 (${state.calcMatchOn ? '開' : '關'})`;
+            btn.className = `toggle-btn ${state.calcMatchOn ? 'on' : ''}`;
+            saveState(false);
+            renderAll();
+        }
+
+        function toggleFairAlert() {
+            state.fairAlertOn = !state.fairAlertOn;
+            const btn = document.getElementById('btn-fair-alert');
+            
+            if (state.fairAlertOn) {
+                btn.textContent = "公平提醒 (開)";
+                btn.className = "toggle-btn on";
+                state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
+                startGlobalTimer();
+            } else {
+                btn.textContent = "公平提醒 (關)";
+                btn.className = "toggle-btn";
+                stopGlobalTimer();
+            }
+            saveState(false);
+            updateTimerUI();
+        }
+
+        function startGlobalTimer() {
+            clearInterval(globalTimerInterval);
+            globalTimerInterval = setInterval(() => {
+                if (!state.fairAlertOn) return;
+                
+                const courtOrder = ['A', 'B', 'C', 'D'];
+                for (let i = 0; i < state.courtCount; i++) {
+                    const c = courtOrder[i];
+                    state.courtSeconds[c]++;
+                }
+                updateTimerUI();
+                localStorage.setItem('badminton_system_v17', JSON.stringify(state));
+            }, 1000);
+        }
+
+        function stopGlobalTimer() {
+            clearInterval(globalTimerInterval);
+        }
+
+        function initTimerState() {
+            const btnCalc = document.getElementById('btn-calc-match');
+            btnCalc.textContent = `計算場次 (${state.calcMatchOn ? '開' : '關'})`;
+            btnCalc.className = `toggle-btn ${state.calcMatchOn ? 'on' : ''}`;
+
+            const btnFair = document.getElementById('btn-fair-alert');
+            if(state.fairAlertOn) {
+                btnFair.textContent = "公平提醒 (開)";
+                btnFair.className = "toggle-btn on";
+                startGlobalTimer();
+            } else {
+                btnFair.textContent = "公平提醒 (關)";
+                btnFair.className = "toggle-btn";
+            }
+            updateTimerUI();
+        }
+
+        function updateTimerUI() {
+            const courtOrder = ['A', 'B', 'C', 'D'];
+            courtOrder.forEach(c => {
+                const timerEl = document.getElementById(`timer-${c}`);
+                if (state.fairAlertOn) {
+                    timerEl.style.display = 'inline-block';
+                    let totalSecs = state.courtSeconds[c] || 0;
+                    let mins = Math.floor(totalSecs / 60);
+                    let secs = totalSecs % 60;
+                    timerEl.textContent = `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                } else {
+                    timerEl.style.display = 'none';
+                }
+            });
+        }
+
+        function formatNameDisplay(name) {
+            if (name === '—') return name;
+            if (state.calcMatchOn) {
+                const count = state.matchCounts[name] || 0;
+                return `${name}<span class="match-count">${count}</span>`;
+            }
+            return name;
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`page-${pageId}`).classList.add('active');
+            document.getElementById(`btn-page-${pageId}`).classList.add('active');
+            
+            selectedSlot = null;
+            renderAll();
+            updateTimerUI();
+        }
+
+        function renderAll() {
+            renderCourts();
+            renderQueue();
+            renderRest();
+            renderSettingsPlayers();
+        }
+
+        function renderCourts() {
+            const allCourts = ['A', 'B', 'C', 'D'];
+            allCourts.forEach((courtId, index) => {
+                const box = document.getElementById(`court-box-${courtId}`);
+                if (index < state.courtCount) {
+                    box.classList.remove('hidden');
+                } else {
+                    box.classList.add('hidden');
+                }
+
+                const slots = document.querySelectorAll(`.slot[data-court="${courtId}"]`);
+                slots.forEach(slot => {
+                    const idx = slot.getAttribute('data-idx');
+                    const name = state.courts[courtId][idx];
+                    slot.innerHTML = formatNameDisplay(name);
+                    slot.className = `slot ${name !== '—' ? 'occupied' : ''}`;
+                    if (selectedSlot && selectedSlot.zone === 'court' && selectedSlot.court === courtId && selectedSlot.idx == idx) {
+                        slot.classList.add('selected');
+                    }
+                });
+            });
+        }
+
+        function renderQueue() {
+            const container = document.getElementById('queue-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const name = state.queue[i] || '—';
+                const slot = document.createElement('div');
+                slot.className = `slot ${name !== '—' ? 'occupied' : ''}`;
+                slot.innerHTML = formatNameDisplay(name);
+                slot.setAttribute('data-zone', 'queue');
+                slot.setAttribute('data-idx', i);
+                if (selectedSlot && selectedSlot.zone === 'queue' && selectedSlot.idx == i) {
+                    slot.classList.add('selected');
+                }
+                slot.addEventListener('click', (e) => handleSlotClick(e.currentTarget));
+                container.appendChild(slot);
+            }
+        }
+
+        function renderRest() {
+            const container = document.getElementById('rest-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const name = state.rest[i] || '—';
+                const slot = document.createElement('div');
+                slot.className = `slot ${name !== '—' ? 'occupied' : ''}`;
+                slot.innerHTML = formatNameDisplay(name);
+                slot.setAttribute('data-zone', 'rest');
+                slot.setAttribute('data-idx', i);
+                if (selectedSlot && selectedSlot.zone === 'rest' && selectedSlot.idx == i) {
+                    slot.classList.add('selected');
+                }
+                slot.addEventListener('click', (e) => handleSlotClick(e.currentTarget));
+                container.appendChild(slot);
+            }
+        }
+
+        document.querySelectorAll('.slot[data-zone="court"]').forEach(slot => {
+            slot.addEventListener('click', (e) => handleSlotClick(e.currentTarget));
+        });
+
+        function handleSlotClick(el) {
+            const zone = el.getAttribute('data-zone');
+            const idx = parseInt(el.getAttribute('data-idx'));
+            const court = el.getAttribute('data-court');
+            const clickedData = { zone, idx, court };
+
+            if (!selectedSlot) {
+                selectedSlot = clickedData;
+                renderAll();
+            } else {
+                if (selectedSlot.zone === clickedData.zone && selectedSlot.idx === clickedData.idx && selectedSlot.court === clickedData.court) {
+                    selectedSlot = null;
+                    renderAll();
+                    return;
+                }
+                saveState(); 
+
+                const val1 = getValueBySlot(selectedSlot);
+                const val2 = getValueBySlot(clickedData);
+
+                setValueBySlot(selectedSlot, val2);
+                setValueBySlot(clickedData, val1);
+
+                if (state.fairAlertOn) {
+                    if (selectedSlot.zone === 'court') state.courtSeconds[selectedSlot.court] = 0;
+                    if (clickedData.zone === 'court') state.courtSeconds[clickedData.court] = 0;
+                }
+
+                selectedSlot = null;
+                saveState(false);
+                renderAll();
+                updateTimerUI();
+            }
+        }
+
+        function getValueBySlot(s) {
+            if (s.zone === 'court') return state.courts[s.court][s.idx];
+            if (s.zone === 'queue') return state.queue[s.idx];
+            if (s.zone === 'rest') return state.rest[s.idx];
+            return '—';
+        }
+
+        function setValueBySlot(s, val) {
+            if (s.zone === 'court') state.courts[s.court][s.idx] = val;
+            if (s.zone === 'queue') state.queue[s.idx] = val;
+            if (s.zone === 'rest') state.rest[s.idx] = val;
+        }
+
+        function rotateCourt(courtId) {
+            saveState(); 
+
+            let courtPlayers = [...state.courts[courtId]];
+            
+            courtPlayers.forEach(p => {
+                if (p !== '—') {
+                    state.matchCounts[p] = (state.matchCounts[p] || 0) + 1;
+                }
+            });
+
+            let queueGroups = [];
+            for (let i = 0; i < 20; i += 4) {
+                queueGroups.push(state.queue.slice(i, i + 4));
+            }
+
+            let nextGroupIdx = queueGroups.findIndex(group => group.some(p => p !== '—'));
+            let nextPlayers = ["—", "—", "—", "—"];
+
+            if (nextGroupIdx !== -1) {
+                nextPlayers = queueGroups.splice(nextGroupIdx, 1)[0];
+                queueGroups.push(["—", "—", "—", "—"]);
+            }
+            state.courts[courtId] = nextPlayers;
+
+            if (courtPlayers.some(p => p !== '—')) {
+                let emptyGroupIdx = queueGroups.findIndex(group => group.every(p => p === '—'));
+                if (emptyGroupIdx !== -1) {
+                    queueGroups[emptyGroupIdx] = courtPlayers;
+                } else {
+                    queueGroups[queueGroups.length - 1] = courtPlayers;
+                }
+            }
+
+            state.queue = queueGroups.flat();
+
+            if (state.fairAlertOn) {
+                state.courtSeconds[courtId] = 0;
+            }
+
+            saveState(false);
+            renderAll();
+            updateTimerUI();
+        }
+
+        function renderSettingsPlayers() {
+            const groups = { A: 'container-A', B: 'container-B', O: 'container-O' };
+            Object.values(groups).forEach(id => document.getElementById(id).innerHTML = '');
+
+            state.players.forEach(p => {
+                const container = document.getElementById(groups[p.group]);
+                if (container) {
+                    const label = document.createElement('label');
+                    label.className = 'player-label';
+                    label.innerHTML = `
+                        <input type="checkbox" ${p.checked ? 'checked' : ''} onchange="updatePlayerCheck('${p.id}', this.checked)">
+                        <span>${p.name}</span>
+                    `;
+                    container.appendChild(label);
+                }
+            });
+
+            document.getElementById('all-A').checked = checkGroupAllChecked('A');
+            document.getElementById('all-B').checked = checkGroupAllChecked('B');
+            document.getElementById('all-O').checked = checkGroupAllChecked('O');
+        }
+
+        function checkGroupAllChecked(g) {
+            const groupPlayers = state.players.filter(p => p.group === g);
+            return groupPlayers.length > 0 && groupPlayers.every(p => p.checked);
+        }
+
+        function addPlayer(groupCode) {
+            const input = document.getElementById(`input-${groupCode}`);
+            const name = input.value.trim();
+            if (!name) return;
+
+            if (state.players.some(p => p.name === name)) {
+                alert('此名字已存在！');
+                return;
+            }
+
+            saveState();
+            state.players.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                name: name,
+                group: groupCode,
+                checked: true
+            });
+
+            input.value = '';
+            saveState(false);
+            renderAll();
+        }
+
+        function updatePlayerCheck(id, isChecked) {
+            const player = state.players.find(p => p.id === id);
+            if (player) {
+                player.checked = isChecked;
+                saveState(false);
+                document.getElementById('all-A').checked = checkGroupAllChecked('A');
+                document.getElementById('all-B').checked = checkGroupAllChecked('B');
+                document.getElementById('all-O').checked = checkGroupAllChecked('O');
+            }
+        }
+
+        function toggleSelectGroup(groupCode, isChecked) {
+            saveState();
+            state.players.forEach(p => {
+                if (p.group === groupCode) p.checked = isChecked;
+            });
+            saveState(false);
+            renderAll();
+        }
+
+        function startNewGame() {
+            const selectedNames = state.players.filter(p => p.checked).map(p => p.name);
+            if (selectedNames.length === 0) {
+                alert('請先勾選要參與比賽的人員名單！');
+                return;
+            }
+
+            saveState();
+            state.courts.A = ["—", "—", "—", "—"];
+            state.courts.B = ["—", "—", "—", "—"];
+            state.courts.C = ["—", "—", "—", "—"];
+            state.courts.D = ["—", "—", "—", "—"];
+            state.queue = Array(20).fill("—");
+            state.rest = Array(12).fill("—");
+            state.matchCounts = {};
+            state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
+            selectedNames.forEach(name => state.matchCounts[name] = 0);
+
+            let nameIdx = 0;
+            const courtOrder = ['A', 'B', 'C', 'D'];
+            
+            for (let i = 0; i < state.courtCount; i++) {
+                let c = courtOrder[i];
+                for (let j = 0; j < 4; j++) {
+                    if (nameIdx < selectedNames.length) {
+                        state.courts[c][j] = selectedNames[nameIdx++];
+                    }
+                }
+            }
+
+            for (let i = 0; i < 20; i++) {
+                if (nameIdx < selectedNames.length) {
+                    state.queue[i] = selectedNames[nameIdx++];
+                }
+            }
+
+            for (let i = 0; i < 12; i++) {
+                if (nameIdx < selectedNames.length) {
+                    state.rest[i] = selectedNames[nameIdx++];
+                }
+            }
+
+            saveState(false);
+            switchPage('schedule');
+        }
+
+        function deleteSelectedPlayers() {
+            const checkedPlayers = state.players.filter(p => p.checked);
+            if (checkedPlayers.length === 0) {
+                alert('請先勾選欲刪除的人員。');
+                return;
+            }
+
+            if (!confirm(`確定要刪除這 ${checkedPlayers.length} 位人員嗎？`)) return;
+
+            saveState();
+            const deletedNames = checkedPlayers.map(p => p.name);
+            state.players = state.players.filter(p => !p.checked);
+
+            ['A', 'B', 'C', 'D'].forEach(c => {
+                state.courts[c] = state.courts[c].map(name => deletedNames.includes(name) ? '—' : name);
+            });
+            state.queue = state.queue.map(name => deletedNames.includes(name) ? '—' : name);
+            state.rest = state.rest.map(name => deletedNames.includes(name) ? '—' : name);
+
+            deletedNames.forEach(name => delete state.matchCounts[name]);
+
+            saveState(false);
+            renderAll();
+        }
+
+        function uncheckAll() {
+            saveState();
+            state.players.forEach(p => p.checked = false);
+            saveState(false);
+            renderAll();
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `badminton_system_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            const input = event.target;
+            if (!input.files || input.files.length === 0) return;
+
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function() {
+                try {
+                    const importedState = JSON.parse(reader.result);
+                    if (importedState.players && Array.isArray(importedState.players)) {
+                        saveState();
+                        
+                        importedState.players.forEach(p => {
+                            if (!p.group) p.group = "A"; 
+                            p.checked = true; 
+                        });
+                        
+                        state = importedState;
+                        if(!state.matchCounts) state.matchCounts = {};
+                        if(!state.courtCount) state.courtCount = 4;
+                        if(!state.courtSeconds) state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
+                        
+                        document.getElementById('court-count-select').value = state.courtCount;
+                        
+                        saveState(false);
+                        renderAll();
+                        initTimerState();
+                        alert('資料已成功匯入！所有人員已依原時段歸類顯示。');
+                    } else {
+                        alert('匯入失敗：JSON 格式與系統架構不符。');
+                    }
+                } catch (e) {
+                    alert('讀取檔案失敗，請確保上傳正確的 JSON 備份檔。');
+                }
+                input.value = '';
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
