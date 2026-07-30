@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>羽毛球賽程系統</title>
     <style>
+        :root {
+            --font-scale: 1;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: #f4f6f9;
             margin: 0;
             padding: 20px;
             color: #333;
+            font-size: calc(16px * var(--font-scale));
         }
         .header {
             display: flex;
@@ -19,12 +23,27 @@
             margin-bottom: 20px;
             border-bottom: 2px solid #ddd;
             padding-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
-        h1 { margin: 0; font-size: 24px; color: #222; }
+        h1 { margin: 0; font-size: calc(24px * var(--font-scale)); color: #222; }
         .top-controls {
             display: flex;
             gap: 8px;
             align-items: center;
+            flex-wrap: wrap;
+        }
+        .font-select-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: calc(14px * var(--font-scale));
+        }
+        .font-select-group select {
+            padding: 6px;
+            font-size: calc(14px * var(--font-scale));
+            border-radius: 4px;
+            border: 1px solid #ccc;
         }
         .nav-btn {
             background-color: #e0e0e0;
@@ -32,7 +51,7 @@
             padding: 8px 16px;
             cursor: pointer;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: calc(14px * var(--font-scale));
         }
         .nav-btn:hover { background-color: #d0d0d0; }
         .nav-btn.active { background-color: #007bff; color: white; border-color: #0069d9; }
@@ -41,7 +60,7 @@
             border: 1px solid #ccc;
             padding: 8px 12px;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: calc(14px * var(--font-scale));
             cursor: pointer;
         }
         .toggle-btn.on { background-color: #28a745; color: white; border-color: #218838; }
@@ -49,35 +68,39 @@
         .page { display: none; }
         .page.active { display: block; }
 
-        /* 排程頁面樣式 */
+        /* 排程頁面樣式：強制同一行且自適應寬度 */
         .courts-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            gap: 10px;
             margin-bottom: 25px;
-        }
-        @media (max-width: 900px) {
-            .courts-container { grid-template-columns: repeat(2, 1fr); }
+            width: 100%;
+            box-sizing: border-box;
         }
         .court-box {
+            flex: 1;
+            min-width: 0; /* 防止子元素撐開 Flex 項目 */
             background-color: #d1ecf1;
             border: 1px solid #bee5eb;
             border-radius: 6px;
-            padding: 12px;
+            padding: 8px;
             text-align: center;
             position: relative;
+            box-sizing: border-box;
         }
         .court-box.hidden { display: none !important; }
         .court-header-zone {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
         }
-        .court-title { font-weight: bold; color: #0c5460; font-size: 16px; }
+        .court-title { font-weight: bold; color: #0c5460; font-size: calc(16px * var(--font-scale)); }
         .court-timer {
-            font-size: 12px;
+            font-size: calc(12px * var(--font-scale));
             background-color: #17a2b8;
             color: white;
             padding: 2px 6px;
@@ -88,8 +111,8 @@
         .player-grid-4 {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 6px;
+            margin-bottom: 8px;
         }
         .slot {
             background-color: #fff;
@@ -99,14 +122,14 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: calc(14px * var(--font-scale));
             cursor: pointer;
             user-select: none;
             transition: all 0.2s;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            padding: 0 4px;
+            padding: 0 2px;
         }
         .slot:hover { border-color: #007bff; background-color: #f0f7ff; }
         .slot.selected {
@@ -120,15 +143,16 @@
             background-color: #28a745;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 6px 8px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 13px;
+            font-size: calc(13px * var(--font-scale));
+            width: 100%;
         }
         .btn-next-match:hover { background-color: #218838; }
 
         .section-title {
-            font-size: 18px;
+            font-size: calc(18px * var(--font-scale));
             font-weight: bold;
             margin: 20px 0 10px 0;
             border-left: 4px solid #007bff;
@@ -146,9 +170,10 @@
             padding: 15px;
             border: 1px solid #ffeeba;
             border-radius: 6px;
+            overflow-x: auto;
         }
         
-        /* 休息區 */
+        /* 休息區 (18格，每排6格) */
         .rest-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
@@ -175,6 +200,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .io-btn {
             background-color: #6c757d;
@@ -183,7 +209,7 @@
             padding: 8px 16px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: calc(14px * var(--font-scale));
         }
         .io-btn:hover { background-color: #5a6268; }
         .file-input { display: none; }
@@ -200,7 +226,7 @@
             align-items: center;
             gap: 10px;
             font-weight: bold;
-            font-size: 16px;
+            font-size: calc(16px * var(--font-scale));
             margin-bottom: 10px;
             border-bottom: 1px solid #eee;
             padding-bottom: 5px;
@@ -216,6 +242,7 @@
             border-radius: 4px;
             flex: 1;
             max-width: 200px;
+            font-size: calc(14px * var(--font-scale));
         }
         .btn-add {
             background-color: #007bff;
@@ -224,6 +251,7 @@
             padding: 6px 12px;
             border-radius: 4px;
             cursor: pointer;
+            font-size: calc(14px * var(--font-scale));
         }
         .btn-add:hover { background-color: #0069d9; }
         
@@ -243,6 +271,7 @@
             border: 1px solid #eee;
             border-radius: 4px;
             user-select: none;
+            font-size: calc(14px * var(--font-scale));
         }
         .player-label:hover { background: #f0f4f8; }
 
@@ -259,19 +288,19 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 15px;
+            font-size: calc(15px * var(--font-scale));
             font-weight: bold;
             margin-right: 10px;
         }
         .court-select-group select {
             padding: 8px;
-            font-size: 14px;
+            font-size: calc(14px * var(--font-scale));
             border-radius: 4px;
             border: 1px solid #ccc;
         }
         .action-btn {
             padding: 10px 20px;
-            font-size: 15px;
+            font-size: calc(15px * var(--font-scale));
             font-weight: bold;
             border: none;
             border-radius: 4px;
@@ -287,13 +316,13 @@
         .hint {
             margin-top: 15px;
             color: #666;
-            font-size: 14px;
+            font-size: calc(14px * var(--font-scale));
             background-color: #e8f4fd;
             padding: 10px;
             border-left: 4px solid #17a2b8;
         }
         .match-count {
-            font-size: 11px;
+            font-size: calc(11px * var(--font-scale));
             background-color: #6c757d;
             color: white;
             border-radius: 10px;
@@ -305,8 +334,17 @@
 <body>
 
     <div class="header">
-        <h1>羽毛球賽程系統 <small style="font-size:12px; color:#888;">v1.8.0</small></h1>
+        <h1>羽毛球賽程系統 <small style="font-size:calc(12px * var(--font-scale)); color:#888;">v2.0.0</small></h1>
         <div class="top-controls">
+            <div class="font-select-group">
+                <label for="font-scale-select">🔤 字體：</label>
+                <select id="font-scale-select" onchange="updateFontScale(this.value)">
+                    <option value="0.8">小</option>
+                    <option value="1" selected>中 (預設)</option>
+                    <option value="1.2">大</option>
+                    <option value="1.4">特大</option>
+                </select>
+            </div>
             <button class="toggle-btn" id="btn-calc-match" onclick="toggleCalcMatch()">計算場次 (關)</button>
             <button class="toggle-btn" id="btn-fair-alert" onclick="toggleFairAlert()">公平提醒 (關)</button>
             <button class="nav-btn" onclick="undo()">⬅️ 上一步</button>
@@ -382,7 +420,7 @@
         <div class="section-title">排隊區 (20格，每4人一組為一直行)</div>
         <div class="queue-grid" id="queue-container"></div>
 
-        <div class="section-title">休息區 (共12格)</div>
+        <div class="section-title">休息區 (共18格)</div>
         <div class="rest-grid" id="rest-container"></div>
     </div>
 
@@ -459,11 +497,12 @@
                 C: ["—", "—", "—", "—"], D: ["—", "—", "—", "—"]
             },
             queue: Array(20).fill("—"),
-            rest: Array(12).fill("—"),
+            rest: Array(18).fill("—"),
             matchCounts: {}, 
             calcMatchOn: false,
             fairAlertOn: false,
             courtCount: 4,
+            fontScale: 1,
             courtSeconds: { A: 0, B: 0, C: 0, D: 0 }
         };
 
@@ -483,13 +522,35 @@
             }
             if(!state.matchCounts) state.matchCounts = {};
             if(!state.courtCount) state.courtCount = 4;
+            if(!state.fontScale) state.fontScale = 1;
             if(!state.courtSeconds) state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
             
+            if(!state.rest || state.rest.length < 18) {
+                const oldRest = state.rest || [];
+                state.rest = Array(18).fill("—");
+                for(let i = 0; i < oldRest.length && i < 18; i++) {
+                    state.rest[i] = oldRest[i];
+                }
+            }
+            
             document.getElementById('court-count-select').value = state.courtCount;
+            document.getElementById('font-scale-select').value = state.fontScale;
+            updateFontScaleCSS(state.fontScale);
             
             renderAll();
             initTimerState();
         };
+
+        function updateFontScale(val) {
+            saveState();
+            state.fontScale = parseFloat(val);
+            updateFontScaleCSS(state.fontScale);
+            saveState(false);
+        }
+
+        function updateFontScaleCSS(scale) {
+            document.documentElement.style.setProperty('--font-scale', scale);
+        }
 
         function saveState(pushToHistory = true) {
             if (pushToHistory) {
@@ -505,6 +566,8 @@
             state = JSON.parse(historyStack.pop());
             localStorage.setItem('badminton_system_v17', JSON.stringify(state));
             document.getElementById('court-count-select').value = state.courtCount;
+            document.getElementById('font-scale-select').value = state.fontScale || 1;
+            updateFontScaleCSS(state.fontScale || 1);
             renderAll();
             updateTimerUI();
         }
@@ -515,6 +578,8 @@
             state = JSON.parse(redoStack.pop());
             localStorage.setItem('badminton_system_v17', JSON.stringify(state));
             document.getElementById('court-count-select').value = state.courtCount;
+            document.getElementById('font-scale-select').value = state.fontScale || 1;
+            updateFontScaleCSS(state.fontScale || 1);
             renderAll();
             updateTimerUI();
         }
@@ -677,7 +742,7 @@
         function renderRest() {
             const container = document.getElementById('rest-container');
             container.innerHTML = '';
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 18; i++) {
                 const name = state.rest[i] || '—';
                 const slot = document.createElement('div');
                 slot.className = `slot ${name !== '—' ? 'occupied' : ''}`;
@@ -867,39 +932,48 @@
             }
 
             saveState();
-            state.courts.A = ["—", "—", "—", "—"];
-            state.courts.B = ["—", "—", "—", "—"];
-            state.courts.C = ["—", "—", "—", "—"];
-            state.courts.D = ["—", "—", "—", "—"];
-            state.queue = Array(20).fill("—");
-            state.rest = Array(12).fill("—");
-            state.matchCounts = {};
-            state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
-            selectedNames.forEach(name => state.matchCounts[name] = 0);
 
-            let nameIdx = 0;
-            const courtOrder = ['A', 'B', 'C', 'D'];
+            // 1. 找出目前已經排在頁面上的所有人
+            let currentInSchedule = new Set();
+            const courtKeys = ['A', 'B', 'C', 'D'];
             
-            for (let i = 0; i < state.courtCount; i++) {
-                let c = courtOrder[i];
-                for (let j = 0; j < 4; j++) {
-                    if (nameIdx < selectedNames.length) {
-                        state.courts[c][j] = selectedNames[nameIdx++];
+            courtKeys.forEach(c => {
+                state.courts[c].forEach(p => { if (p !== '—') currentInSchedule.add(p); });
+            });
+            state.queue.forEach(p => { if (p !== '—') currentInSchedule.add(p); });
+            state.rest.forEach(p => { if (p !== '—') currentInSchedule.add(p); });
+
+            // 2. 移除不在勾選名單中的人員（保留格位留空 '—'）
+            courtKeys.forEach(c => {
+                state.courts[c] = state.courts[c].map(p => selectedNames.includes(p) ? p : '—');
+            });
+            state.queue = state.queue.map(p => selectedNames.includes(p) ? p : '—');
+            state.rest = state.rest.map(p => selectedNames.includes(p) ? p : '—');
+
+            // 3. 找出全新新增的人員（在勾選名單中，但原本不在排程頁面上）
+            let newPlayers = selectedNames.filter(name => !currentInSchedule.has(name));
+
+            // 4. 將新增人員依序填入排隊區空位，若滿了則填入休息區空位
+            let newIdx = 0;
+            if (newIdx < newPlayers.length) {
+                for (let i = 0; i < state.queue.length && newIdx < newPlayers.length; i++) {
+                    if (state.queue[i] === '—') {
+                        state.queue[i] = newPlayers[newIdx++];
+                    }
+                }
+            }
+            if (newIdx < newPlayers.length) {
+                for (let i = 0; i < state.rest.length && newIdx < newPlayers.length; i++) {
+                    if (state.rest[i] === '—') {
+                        state.rest[i] = newPlayers[newIdx++];
                     }
                 }
             }
 
-            for (let i = 0; i < 20; i++) {
-                if (nameIdx < selectedNames.length) {
-                    state.queue[i] = selectedNames[nameIdx++];
-                }
-            }
-
-            for (let i = 0; i < 12; i++) {
-                if (nameIdx < selectedNames.length) {
-                    state.rest[i] = selectedNames[nameIdx++];
-                }
-            }
+            // 5. 重置比賽次數統計與計時器
+            state.matchCounts = {};
+            selectedNames.forEach(name => state.matchCounts[name] = 0);
+            state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
 
             saveState(false);
             switchPage('schedule');
@@ -967,9 +1041,19 @@
                         state = importedState;
                         if(!state.matchCounts) state.matchCounts = {};
                         if(!state.courtCount) state.courtCount = 4;
+                        if(!state.fontScale) state.fontScale = 1;
                         if(!state.courtSeconds) state.courtSeconds = { A: 0, B: 0, C: 0, D: 0 };
+                        if(!state.rest || state.rest.length < 18) {
+                            const oldRest = state.rest || [];
+                            state.rest = Array(18).fill("—");
+                            for(let i = 0; i < oldRest.length && i < 18; i++) {
+                                state.rest[i] = oldRest[i];
+                            }
+                        }
                         
                         document.getElementById('court-count-select').value = state.courtCount;
+                        document.getElementById('font-scale-select').value = state.fontScale;
+                        updateFontScaleCSS(state.fontScale);
                         
                         saveState(false);
                         renderAll();
